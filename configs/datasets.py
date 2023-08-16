@@ -26,3 +26,19 @@ class alpaca_dataset:
     train_split: str = "train"
     test_split: str = "val"
     data_path: str = "ft_datasets/alpaca_data.json"
+
+
+@dataclass
+class dopedmat_dataset:
+    dataset: str = "dopedmat_dataset"
+    train_split: str = "train"
+    test_split: str = "val"
+    data_path: str = "../datasets/doping/doping_data_forllama"
+
+
+@dataclass
+class AuNR_dataset:
+    dataset: str = "AuNR_dataset"
+    train_split: str = "train"
+    test_split: str = "val"
+    data_path: str = "../datasets/AuNR/AuNR_data_forllama"

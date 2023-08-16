@@ -46,11 +46,13 @@ class InstructionDataset(Dataset):
 
 
         ann = self.ann[index]
+        
         if ann.get("input", "") == "":
             prompt = PROMPT_DICT["prompt_no_input"].format_map(ann)
         else:
             prompt = PROMPT_DICT["prompt_input"].format_map(ann)
         example = prompt + ann["output"]
+        #print(example)
         prompt = torch.tensor(
             self.tokenizer.encode(prompt), dtype=torch.int64
         )
