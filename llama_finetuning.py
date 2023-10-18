@@ -43,7 +43,8 @@ from utils.train_utils import (
     print_model_size,
     get_policies
 )
-
+import os
+os.environ['PYTORCH_CUDA_ALLOC_CONF']='expandable_segments:True'
 
 def main(**kwargs):
     # Update the configuration for the training and sharding process
@@ -53,6 +54,9 @@ def main(**kwargs):
     torch.cuda.manual_seed(train_config.seed)
     torch.manual_seed(train_config.seed)
 
+    if not os.path.exists(train_config.output_dir):
+        print("mkdir...",str(train_config.output_dir))
+        os.makedirs(train_config.output_dir)
     if train_config.enable_fsdp:
         setup()
         # torchrun specific
@@ -214,6 +218,16 @@ def main(**kwargs):
             drop_last=True,
             collate_fn=default_data_collator,
         )
+    else:
+        eval_dataloader = torch.utils.data.DataLoader(
+            dataset_val,
+            batch_size=train_config.val_batch_size,
+            num_workers=train_config.num_workers_dataloader,
+            pin_memory=True,
+            sampler=val_sampler if val_sampler else None,
+            drop_last=True,
+            collate_fn=default_data_collator,
+        )
 
     # Initialize the optimizer and learning rate scheduler
     if fsdp_config.pure_bf16 and fsdp_config.optimizer == "anyprecision":
@@ -231,7 +245,6 @@ def main(**kwargs):
             weight_decay=0.0,
         )
     scheduler = StepLR(optimizer, step_size=1, gamma=train_config.gamma)
-
     # Start the training process
     results = train(
         model,

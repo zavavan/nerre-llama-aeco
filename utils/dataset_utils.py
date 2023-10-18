@@ -9,8 +9,12 @@ from ft_datasets import (
     get_grammar_dataset,
     get_alpaca_dataset,
     get_samsum_dataset,
-    get_dopedmat_dataset,
-    get_AuNR_dataset
+    get_doping_dataset,
+    #get_dopingengextra_dataset,
+    #get_dopingjson_dataset,
+    get_genmat_dataset,
+    get_AuNR_dataset,
+    get_mof_dataset,
 )
 from typing import Optional
 
@@ -19,9 +23,23 @@ DATASET_PREPROC = {
     "alpaca_dataset": partial(get_alpaca_dataset, max_words=224),
     "grammar_dataset": get_grammar_dataset,
     "samsum_dataset": get_samsum_dataset,
-    "dopedmat_dataset": get_dopedmat_dataset,
-    "AuNR_dataset": get_AuNR_dataset,
+    "dopingjson_dataset": get_doping_dataset,
+    "dopingengextra_dataset":get_doping_dataset,
+    "dopingeng_dataset":get_doping_dataset,
+#    "dopingjson_dataset": get_dopingjson_dataset,
+#    "dopingengextra_dataset":get_dopingengextra_dataset,
+    "generalmatfold0_dataset":get_genmat_dataset,
+    "generalmatfold1_dataset":get_genmat_dataset,
+    "generalmatfold2_dataset":get_genmat_dataset,
+    "generalmatfold3_dataset":get_genmat_dataset,
+    "generalmatfold4_dataset":get_genmat_dataset,
+    "moffold0_dataset":get_mof_dataset,
+    "moffold1_dataset":get_mof_dataset,
+    "moffold2_dataset":get_mof_dataset,
+    "moffold3_dataset":get_mof_dataset,
+    "moffold4_dataset":get_mof_dataset,
 
+    "AuNR_dataset": get_AuNR_dataset,
 }
 
 
