@@ -1,3 +1,18 @@
+# NERRE with Llama 2
+
+### For the publication "*Structured information extraction from scientific text with large language models*" in Nature Communications by John Dagdelen*, Alexander Dunn*, Sanghoon Lee, Nicholas Walker, Andrew S. Rosen, Gerbrand Ceder, Kristin Persson, and Anubhav Jain.
+
+### For instructions for loading and fine-tuning models used in the paper, see [Instructions](Instructions.md)
+
+If you are just looking to download the LoRA weights directly, use this url: 
+[https://figshare.com/ndownloader/files/43044994](https://figshare.com/ndownloader/files/43044994) 
+and view the data entry on [Figshare](https://figshare.com/articles/dataset/LoRA_weights_for_Llama-2_NERRE/24501331). For more details on how to use it see [Instructions](Instructions.md).  
+
+
+---
+
+---
+
 # Llama 2 Fine-tuning / Inference Recipes and Examples
 
 The 'llama-recipes' repository is a companion to the [Llama 2 model](https://github.com/facebookresearch/llama). The goal of this repository is to provide examples to quickly get started with fine-tuning for domain adaptation and how to run inference for the fine-tuned models. For ease of use, the examples use Hugging Face converted versions of the models. See steps for conversion of the model [here](#model-conversion-to-hugging-face).
