@@ -20,30 +20,55 @@ To reproduce fine-tuned model on doping task, first adjust the training data pat
 ## Doping task
 
 ```bash
-python llama_finetuning.py  --use_peft --peft_method lora --quantization --model_name /patht_of_model_folder/70B --output_dir Path/to/save/PEFT/model --batch_size_training 1 --micro_batch_size 1 --num_epochs 7 --dataset dopingjson_dataset
-python llama_finetuning.py  --use_peft --peft_method lora --quantization --model_name /patht_of_model_folder/70B --output_dir Path/to/save/PEFT/model --batch_size_training 1 --micro_batch_size 1 --num_epochs 7 --dataset dopingengextra_dataset
-python llama_finetuning.py  --use_peft --peft_method lora --quantization --model_name /patht_of_model_folder/70B --output_dir Path/to/save/PEFT/model --batch_size_training 1 --micro_batch_size 1 --num_epochs 7 --dataset dopingeng_dataset
+python llama_finetuning.py  \
+  --use_peft \
+  --peft_method lora \
+  --quantization \
+  --model_name '/path_of_model_folder/70B' \
+  --output_dir 'path/of/saved/peft/model' \
+  --batch_size_training 1 \
+  --micro_batch_size 1 \
+  --num_epochs 7 \
+  --dataset dopingjson_dataset
 ```
+
+For schemas besides `json`, use the datasets:
+- `dopingengextra_dataset` for DopingExtra-English
+- `dopingeng_dataset` for Doping-English
 
 ## General task
 
 ```bash
-python llama_finetuning.py --use_peft --peft_method lora --model_name /path_of_model_folder/70B --output_dir Path/to/save/PEFT/model --quantization --batch_size_training 1 --micro_batch_size 1 --num_epochs 4 --dataset generalmatfold0_dataset
-python llama_finetuning.py --use_peft --peft_method lora --model_name /path_of_model_folder/70B --output_dir Path/to/save/PEFT/model --quantization --batch_size_training 1 --micro_batch_size 1 --num_epochs 4 --dataset generalmatfold1_dataset
-python llama_finetuning.py --use_peft --peft_method lora --model_name /path_of_model_folder/70B --output_dir Path/to/save/PEFT/model --quantization --batch_size_training 1 --micro_batch_size 1  --num_epochs 4 --dataset generalmatfold2_dataset
-python llama_finetuning.py --use_peft --peft_method lora --model_name /path_of_model_folder/70B --output_dir Path/to/save/PEFT/model --quantization --batch_size_training 1 --micro_batch_size 1 --num_epochs 4 --dataset generalmatfold3_dataset
-python llama_finetuning.py --use_peft --peft_method lora --model_name /path_of_model_folder/70B --output_dir Path/to/save/PEFT/model --quantization --batch_size_training 1 --micro_batch_size 1 --num_epochs 4 --dataset generalmatfold4_dataset
+python llama_finetuning.py \
+  --use_peft \
+  --peft_method lora \
+  --model_name '/path_of_model_folder/70B' 
+  --output_dir 'path/of/saved/peft/model' \
+  --quantization \
+  --batch_size_training 1 \
+  --micro_batch_size 1 \
+  --num_epochs 4 \
+  --dataset generalmatfold0_dataset
 ```
+
+For cross validation folds besides fold 0 substitute 1, 2, 3, or 4 in place of `*` in the `--dataset generalmatfold*_dataset` argument.
 
 ## MOF task
 
 ```bash
-python llama_finetuning.py --use_peft --peft_method lora --model_name /path_of_model_folder/70B --output_dir Path/to/save/PEFT/model --quantization --batch_size_training 1 --micro_batch_size 1 --num_epochs 4 --dataset moffold0_dataset
-python llama_finetuning.py --use_peft --peft_method lora --model_name /path_of_model_folder/70B --output_dir Path/to/save/PEFT/model --quantization --batch_size_training 1 --micro_batch_size 1 --num_epochs 4 --dataset moffold1_dataset
-python llama_finetuning.py --use_peft --peft_method lora --model_name /path_of_model_folder/70B --output_dir Path/to/save/PEFT/model --quantization --batch_size_training 1 --micro_batch_size 1 --num_epochs 4 --dataset moffold2_dataset
-python llama_finetuning.py --use_peft --peft_method lora --model_name /path_of_model_folder/70B --output_dir Path/to/save/PEFT/model --quantization --batch_size_training 1 --micro_batch_size 1 --num_epochs 4 --dataset moffold3_dataset
-python llama_finetuning.py --use_peft --peft_method lora --model_name /path_of_model_folder/70B --output_dir Path/to/save/PEFT/model --quantization --batch_size_training 1 --micro_batch_size 1 --num_epochs 4 --dataset moffold4_dataset
+python llama_finetuning.py \
+  --use_peft \
+  --peft_method lora \
+  --model_name '/path_of_model_folder/70B' \
+  --output_dir 'path/of/saved/peft/model' \
+  --quantization \
+  --batch_size_training 1 \
+  --micro_batch_size 1 \
+  --num_epochs 4 \
+  --dataset moffold0_dataset
 ```
+
+For cross validation folds besides fold 0 substitute 1, 2, 3, or 4 in place of `*` in the `--dataset moffold*_dataset` argument.
 
 # Inference using fine-tuned Llama-2-70B (8-bit) on a single GPU
 
