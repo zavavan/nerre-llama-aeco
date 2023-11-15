@@ -4,11 +4,9 @@
 
 If you are just looking to download the LoRA weights directly, use this url: 
 [https://figshare.com/ndownloader/files/43044994](https://figshare.com/ndownloader/files/43044994) 
-and view the data entry on [Figshare](https://figshare.com/articles/dataset/LoRA_weights_for_Llama-2_NERRE/24501331). For more details on how to use it see [Instructions](Instructions.md).  
+and view the data entry on [Figshare](https://figshare.com/articles/dataset/LoRA_weights_for_Llama-2_NERRE/24501331).
 
 # Llama-2 Fine-tuning / Inference for Information Extraction tasks in Materials Science
-
-For the publication "Structured information extraction from scientific text with large language models" in Nature Communications by John Dagdelen*, Alexander Dunn*, Nicholas Walker, Sanghoon Lee, Andrew S. Rosen, Gerbrand Ceder, Kristin A. Persson, and Anubhav Jain.
 
 This repository contains code for Llama-2 benchmark of [NERRE repo](https://github.com/lbnlp/NERRE). This repository is a fork of [facebookresearch/llama-recipes repo](https://github.com/facebookresearch/llama-recipes) and results can be reproduced using [Llama-2-70b](https://huggingface.co/meta-llama/Llama-2-70b-hf) base model. Please refer to [the original repository's README](https://github.com/slee-lab/llama-recipes/blob/main/README.md) for requirements and installations, and also [license information](https://github.com/slee-lab/llama-recipes/blob/main/LICENSE).
 
