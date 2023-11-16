@@ -116,9 +116,7 @@ python step2_predict_llama2.py predict \
 
 ```
 LLAMA2_70B_8bit is either a path of downloaded Llama-2-70b weights or [meta-llama/Llama-2-70b-hf](https://huggingface.co/meta-llama/Llama-2-70b-hf) as shown in this example command;
-lora_weights either points to the lora weights you downloaded or your own fine-tuned weights;
-The `path/to/save/inferencefile` determines the path where the raw outputs (sequences) for the doping task will be saved.
-The `path/to/save/decodedfile` determines the path where the "decoded" (i.e., in JSON format regardless of the LLM schema) is saved.
+lora_weights either points to the path where lora weights is downloaded or your own fine-tuned weights;
 
 You can also substitute the `--schema_type` for `eng` or `engextra`. Please make sure to change `lora_weights` accordingly (e.g. lora_weights/llama2_70b_8bit_doping_eng_7epoch).
 
