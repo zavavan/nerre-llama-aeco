@@ -14,7 +14,7 @@ This repository contains code for Llama-2 benchmark of [NERRE repo](https://gith
 
 # Preparing Environment
 
-This work used installation environment and fine-tuning instructions described in [the original repo's README](README) on a single GPU (A100, 80GB memory). This repository used base model of quantized [Llama-2-70b-hf](https://huggingface.co/meta-llama/Llama-2-70b-hf). Please note that you should after you would have to request and been granted access from Meta to use the Llama-2 base model.
+This work used installation environment and fine-tuning instructions described in [the original repo's README](README) on a single GPU (A100, 80GB memory). This repository used base model of quantized [Llama-2-70b-hf](https://huggingface.co/meta-llama/Llama-2-70b-hf). Please note that you would have to request and been granted access from Meta to use the Llama-2 base model.
 
 
 # Llama-2-70B (8-bit) fine-tuning using LoRA on a single GPU
