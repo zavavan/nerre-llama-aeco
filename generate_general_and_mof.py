@@ -8,7 +8,7 @@ from transformers import GenerationConfig, LlamaForCausalLM, LlamaTokenizer
 from tqdm import tqdm
 from pathlib import Path
 import json, jsonlines
-from datetime import datatime
+from datetime import datetime
 
 def main1(
     load_8bit: bool = True,
