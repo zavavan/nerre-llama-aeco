@@ -14,13 +14,14 @@ def main1(
     load_8bit: bool = True,
     base_model: str = '/PATH/TO/MODEL',
     lora_weights: str = '/PATH/TO/FINETUNED/WEIGHTS',
-    input_dir: str = "/PATH/TO/TESTDATA/", 
+    test_data_path: str = "/PATH/TO/TESTDATA/",
+#    input_dir: str = "/PATH/TO/TESTDATA/", 
     results_dir: str = "",
-    task: str="general",
+#    task: str="general",
     fold: int=0,
 ):
-    assert input_dir.endswith('/'), print("input_dir should end with '/'")
-    input_dir=input_dir+task
+#    assert input_dir.endswith('/'), print("input_dir should end with '/'")
+#    input_dir=input_dir+task
     STOP_TOKEN='\n\nEND\n\n'
 
     starttime = datetime.strptime(str(datetime.now()),"%Y-%m-%d %H:%M:%S.%f")
@@ -30,9 +31,10 @@ def main1(
         os.makedirs(results_dir)
 
     val_data=[]
-    
+
     #read jsonl as val_data
-    with jsonlines.open(input_dir+f'/fold_{fold}/val.jsonl') as f:
+#    with jsonlines.open(input_dir+f'/fold_{fold}/val.jsonl') as f:
+    with jsonlines.open(test_data_path) as f:
         for line in f:
             val_data.append(line)
 
@@ -63,7 +65,7 @@ def main1(
             model.train()
 
             d['gpt3_completion']=response #Note that this is not GPT3 completion but made it consistent for evaluation code
-        
+
             json.dump(d,outfile)
             outfile.write('\n')
     endtime = datetime.strptime(str(datetime.now()),"%Y-%m-%d %H:%M:%S.%f")
