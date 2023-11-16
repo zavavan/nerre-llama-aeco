@@ -128,29 +128,31 @@ You can also substitute the `--schema_type` for `eng` or `engextra`.
 
 ```bash
 python generate_general_and_mof.py \
-  --lora_weights 'path/of/saved/peft/model' \
-  --results_dir '/path/to/save/inferencefile' \
-  --task 'general' \
+  --base_model 'meta-llama/Llama-2-70b-hf' \
+  --lora_weights './lora_weights/llama2_70b_8bit_genmat_fold0_4epoch' \
+  --test_data_path '../NERRE/general_and_mofs/data/experiments_general/fold_0/val.jsonl' \
+  --results_dir './results_general_fold0' \
   --fold 0
 ```
+Where base_model is a path of Llama-2-70b or https://huggingface.co/meta-llama/Llama-2-70b-hf as shown in this example command;
+lora_weights either points to the lora weights you downloaded or your own fine-tuned weights;
+test_data_path either points to test data to run inference on (in NERRE repo for this example) or your own prompts to run inference on (Note that this is defaulted to a jsonl file each having text under 'prompt' key;
+results_dir points to a directory to save the predictions.
 
-Where `path/of/saved/peft` model either points to the lora weights you downloaded or your own fine-tuned weights. 
-
-You can also substitute the `--fold` for 1, 2, 3, or 4. 
+You can also substitute the `--fold` for 1, 2, 3, or 4 to reproduce the test data inferences.
 
 ## MOF task
 
 ```bash
 python generate_general_and_mof.py \
-  --lora_weights Path/of/saved/PEFT/model \
-  --results_dir '/path/to/save/inferencefile' \
-  --task 'mof' \
+  --base_model 'meta-llama/Llama-2-70b-hf' \
+  --lora_weights './lora_weights/llama2_70b_8bit_mof_fold0_4epoch' \
+  --test_data_path '../NERRE/general_and_mofs/data/experiments_mof_gpt3/fold_0/val.jsonl' \
+  --results_dir './results_mof_fold0' \
   --fold 0
 ```
 
-Where `path/of/saved/peft` model either points to the lora weights you downloaded or your own fine-tuned weights. 
-
-You can also substitute the `--fold` for 1, 2, 3, or 4. 
+Where arguments of this is the same as general task.
 
 # Evaluation of test set predictions
 
