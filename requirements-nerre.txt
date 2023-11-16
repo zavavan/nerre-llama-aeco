@@ -1,3 +1,4 @@
 requests
 tqdm
 jsonlines
+transformers==4.31.0
