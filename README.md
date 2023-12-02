@@ -23,6 +23,13 @@ This work used installation environment and fine-tuning instructions described i
 
 To reproduce fine-tuned model on doping task, first adjust the training data path in [datasets.py](configs/datasets.py) and [custom_dataset.py](ft_datasets/custom_dataset.py) to point to training data and test data in [NERRE doping repo](https://github.com/lbnlp/NERRE/tree/main/doping/data), [NERRE general and MOF repo](https://github.com/lbnlp/NERRE/tree/main/general_and_mofs/data). Note that the [custom_dataset.py](ft_datasets/custom_dataset.py) use the key 'input' and 'output' instead of 'prompt' and 'completion', respectively, so you should also adjust the keys in the training data. 
 
+To be specific, make sure to update 'NERRErepo_dir' in [datasets.py](configs/datasets.py) and [process_data.py](process_data.py) to point to the NERRE repo, in the current case, it is pointing to '../NERRE/'. Then, run
+```bash
+python process_data.py
+```
+which will process training data files from NERRE repo to JSON files. This processing includes key changes ('prompt' to 'input' and 'completion' to 'output') but you can also add/modify instructions after each input text.
+
+In the below command lines, you might want to modify model_name and output_dir to your setting.
 ## Doping task
 
 ```bash
@@ -30,8 +37,8 @@ python llama_finetuning.py  \
   --use_peft \
   --peft_method lora \
   --quantization \
-  --model_name '/path_of_model_folder/70B' \
-  --output_dir 'path/of/saved/peft/model' \
+  --model_name 'meta-llama/Llama-2-70b-hf' \
+  --output_dir './my_lora_weights/doping_json' \
   --batch_size_training 1 \
   --micro_batch_size 1 \
   --num_epochs 7 \
@@ -41,6 +48,7 @@ python llama_finetuning.py  \
 For schemas besides `json`, use the datasets:
 - `dopingengextra_dataset` for DopingExtra-English
 - `dopingeng_dataset` for Doping-English
+Also change your output_dir accordingly.
 
 ## General task
 
@@ -48,8 +56,8 @@ For schemas besides `json`, use the datasets:
 python llama_finetuning.py \
   --use_peft \
   --peft_method lora \
-  --model_name '/path_of_model_folder/70B' 
-  --output_dir 'path/of/saved/peft/model' \
+  --model_name 'meta-llama/Llama-2-70b-hf' \
+  --output_dir './my_lora_weights/general_fold0' \
   --quantization \
   --batch_size_training 1 \
   --micro_batch_size 1 \
@@ -58,6 +66,7 @@ python llama_finetuning.py \
 ```
 
 For cross validation folds besides fold 0 substitute 1, 2, 3, or 4 in place of `*` in the `--dataset generalmatfold*_dataset` argument.
+Also change your output_dir accordingly.
 
 ## MOF task
 
@@ -65,8 +74,8 @@ For cross validation folds besides fold 0 substitute 1, 2, 3, or 4 in place of `
 python llama_finetuning.py \
   --use_peft \
   --peft_method lora \
-  --model_name '/path_of_model_folder/70B' \
-  --output_dir 'path/of/saved/peft/model' \
+  --model_name 'meta-llama/Llama-2-70b-hf' \
+  --output_dir './my_lora_weights/general_fold0' \
   --quantization \
   --batch_size_training 1 \
   --micro_batch_size 1 \
@@ -75,6 +84,61 @@ python llama_finetuning.py \
 ```
 
 For cross validation folds besides fold 0 substitute 1, 2, 3, or 4 in place of `*` in the `--dataset moffold*_dataset` argument.
+Also change your output_dir accordingly.
+
+The output will look like: (this example output is from General task finetuning. Please note that part of the output is omitted as "..." due to length.)
+```
+===================================BUG REPORT===================================
+Welcome to bitsandbytes. For bug reports, please run
+
+python -m bitsandbytes
+
+ and submit this information together with your error trace to: https://github.com/TimDettmers/bitsandbytes/issues
+================================================================================
+bin /global/homes/s/shlee/.conda/envs/nerrellamagittest/lib/python3.9/site-packages/bitsandbytes/libbitsandbytes_cuda117.so
+CUDA SETUP: CUDA runtime path found: /opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/lib64/libcudart.so
+CUDA SETUP: Highest compute capability among GPUs detected: 8.0
+CUDA SETUP: Detected CUDA version 117
+CUDA SETUP: Loading binary /home/.conda/envs/nerrellamagittest/lib/python3.9/site-packages/bitsandbytes/libbitsandbytes_cuda117.so...
+^MLoading checkpoint shards:   0%|          | 0/15 [00:00<?, ?it/s]^MLoading checkpoint shards:   7%|▋         | 1/15 [00:05<01:15,  5.39s/it]^MLoading checkpoint shards:  13%|█▎        | 2/15 [00:10<01:09,  5.36s/it]^MLoading checkpoint shards:  20%|██        | 3/15 [00:15<01:03,  5.32s/it]^MLoading checkpoint shards:  27%|██▋       | 4/15 [00:21<00:58,  5.28s/it]^MLoading checkpoint shards:  33%|███▎      | 5/15 [00:26<00:52,  5.26s/it]^MLoading checkpoint shards:  40%|████      | 6/15 [00:31<00:47,  5.26s/it]^MLoading checkpoint shards:  47%|████▋     | 7/15 [00:37<00:42,  5.31s/it]^MLoading checkpoint shards:  53%|█████▎    | 8/15 [00:42<00:36,  5.29s/it]^MLoading checkpoint shards:  60%|██████    | 9/15 [00:47<00:31,  5.27s/it]^MLoading checkpoint shards:  67%|██████▋   | 10/15 [00:52<00:26,  5.26s/it]^MLoading checkpoint shards:  73%|███████▎  | 11/15 [00:58<00:21,  5.26s/it]^MLoading checkpoint shards:  80%|████████  | 12/15 [01:03<00:15,  5.24s/it]^MLoading checkpoint shards:  87%|████████▋ | 13/15 [01:08<00:10,  5.23s/it]^MLoading checkpoint shards:  93%|█████████▎| 14/15 [01:16<00:06,  6.02s/it]^MLoading checkpoint shards: 100%|██████████| 15/15 [01:16<00:00,  4.31s/it]^MLoading checkpoint shards: 100%|██████████| 15/15 [01:16<00:00,  5.11s/it]
+/home/.conda/envs/nerrellamagittest/lib/python3.9/site-packages/peft/utils/other.py:136: FutureWarning: prepare_model_for_int8_training is deprecated and will be removed in a future version. Use prepare_model_for_kbit_training instead.
+  warnings.warn(
+/homes/.conda/envs/nerrellamagittest/lib/python3.9/site-packages/torch/cuda/memory.py:303: FutureWarning: torch.cuda.reset_max_memory_allocated now calls torch.cuda.reset_peak_memory_stats, which resets /all/ peak memory stats.
+  warnings.warn(
+--> Model /home/Llama-2-70b-hf
+
+--> /home/Llama-2-70b-hf has 525.606912 Million params
+
+trainable params: 16,384,000 || all params: 68,993,032,192 || trainable%: 0.023747325605874423
+--> Training Set Length = 549
+--> Validation Set Length = 62
+^MTraining Epoch0:   0%|^[[34m          ^[[0m| 0/549 [00:00<?, ?it/s]`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`...
+/home/.conda/envs/nerrellamagittest/lib/python3.9/site-packages/bitsandbytes/autograd/_functions.py:321: UserWarning: MatMul8bitLt: inputs will be cast from torch.float32 to float16 during quantization
+  warnings.warn(f"MatMul8bitLt: inputs will be cast from {A.dtype} to float16 during quantization")
+^MTraining Epoch0:   0%|^[[34m          ^[[0m| 1/549 [00:10<1:33:30, 10.24s/it]^MTraining Epoch0:   0%|^[[34m          ^[[0m| 2/549 [00:18<1:24:07,  9.23s/it]^MTraining Epoch0:   1%|^[[34m          ^[[0m| 3/549 [00:27<1:20:58,  8.90s/it]^MTraining Epoch0:   1%|^[[34m
+   
+...
+
+ step 0 is completed and loss is 4.917210102081299
+
+ step 1 is completed and loss is 1.3310126066207886  
+
+...
+
+ step 547 is completed and loss is 0.04608272388577461
+
+ step 548 is completed and loss is 0.004849230404943228
+Max CUDA memory allocated was 69 GB
+Max CUDA memory reserved was 71 GB
+Peak active CUDA memory was 69 GB
+Cuda Malloc retires : 0
+CPU Total Peak Memory consumed during the train (max): 3 GB
+Epoch 1: train_perplexity=nan, train_epoch_loss=nan, epcoh time 4646.195265960996s
+^MTraining Epoch1:   0%|^[[34m          ^[[0m| 0/549 [00:00<?, ?it/s]^MTraining Epoch1:   0%|^[[34m          ^[[0m| 1/549 [00:08<1:18:12,  8.56s/it]^MTraining Epoch1:   0%|^[[34m          ^[[0m| 2/549 [00:17<1:17:50,  8.54s/it]
+...
+
+```
+Please note that to the output_dir, LoRA weights of each epoch will be saved, you can modify [llama_finetuning.py](llama_finetuning.py) to change such setting, for instance to save only the last epoch.
 
 # Inference using fine-tuned Llama-2-70B (8-bit) on a single GPU
 
