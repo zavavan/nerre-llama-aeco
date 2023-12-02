@@ -194,14 +194,30 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     print(f"best eval loss on epoch {epoch} is {best_val_loss}")
             val_loss.append(best_val_loss)
             val_prep.append(eval_ppl)
-        
+            
+        ### Modified for no validation
+        else:
+            if train_config.use_peft:
+                print(f"we are about to save the PEFT modules")
+                model.save_pretrained(epochdirpath)
+                model.save_pretrained(train_config.output_dir)
+        ####
+   
         if train_config.enable_fsdp:
             if rank==0:
                 print(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epcoh time {epoch_end_time}s")
         else:
             print(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epcoh time {epoch_end_time}s")
     avg_epoch_time = sum(epoch_times)/ len(epoch_times) 
-    avg_checkpoint_time = sum(checkpoint_times)/ len(checkpoint_times)   
+    
+    ### Modified due to zerobydivision
+    try:
+        avg_checkpoint_time = sum(checkpoint_times)/ len(checkpoint_times)
+    except:
+        avg_checkpoint_time = 0
+    #avg_checkpoint_time = sum(checkpoint_times)/ len(checkpoint_times)   
+    ###
+    
     avg_train_prep = sum(train_prep)/len(train_prep)
     avg_train_loss = sum(train_loss)/len(train_loss)
     if train_config.run_validation:
