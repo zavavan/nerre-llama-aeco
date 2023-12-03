@@ -79,6 +79,13 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     results = {}
     best_val_loss = float("inf")
     for epoch in range(train_config.num_epochs):
+        
+        ## Modified to save every epoch
+        epochdirpath = train_config.output_dir+f'/epoch_{epoch}'
+        if not os.path.exists(epochdirpath):
+            os.makedirs(epochdirpath)
+        ###
+        
         epoch_start_time = time.perf_counter()
         with MemoryTrace() as memtrace:  # track the memory usage
             model.train()
