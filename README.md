@@ -86,7 +86,7 @@ python llama_finetuning.py \
 For cross validation folds besides fold 0 substitute 1, 2, 3, or 4 in place of `*` in the `--dataset moffold*_dataset` argument.
 Also change your output_dir accordingly.
 
-The output will look like: (this example output is from General task finetuning. Please note that part of the output is omitted as "..." due to length.)
+The output will look like: (this example output is from General task finetuning for fold 0 which took approximately 5 hours. Please note that part of the output is omitted as "..." due to length.)
 ```
 ===================================BUG REPORT===================================
 Welcome to bitsandbytes. For bug reports, please run
@@ -133,12 +133,24 @@ Max CUDA memory reserved was 71 GB
 Peak active CUDA memory was 69 GB
 Cuda Malloc retires : 0
 CPU Total Peak Memory consumed during the train (max): 3 GB
-Epoch 1: train_perplexity=nan, train_epoch_loss=nan, epcoh time 4646.195265960996s
+we are about to save the PEFT modules
+Epoch 1: train_perplexity=nan, train_epoch_loss=nan, epcoh time 4645.600262174994s
 ^MTraining Epoch1:   0%|^[[34m          ^[[0m| 0/549 [00:00<?, ?it/s]^MTraining Epoch1:   0%|^[[34m          ^[[0m| 1/549 [00:08<1:18:12,  8.56s/it]^MTraining Epoch1:   0%|^[[34m          ^[[0m| 2/549 [00:17<1:17:50,  8.54s/it]
 ...
-
+ step 548 is completed and loss is 1.1665274541883264e-05
+Max CUDA memory allocated was 69 GB
+Max CUDA memory reserved was 71 GB
+Peak active CUDA memory was 69 GB
+Cuda Malloc retires : 0
+CPU Total Peak Memory consumed during the train (max): 4 GB
+we are about to save the PEFT modules
+Epoch 4: train_perplexity=nan, train_epoch_loss=nan, epcoh time 4672.84168598699s
+Key: avg_train_prep, Value: nan
+Key: avg_train_loss, Value: nan
+Key: avg_epoch_time, Value: 4657.60782927875  
+Key: avg_checkpoint_time, Value: 0
 ```
-Please note that to the output_dir, LoRA weights of each epoch will be saved, you can modify [llama_finetuning.py](llama_finetuning.py) to change such setting, for instance to save only the last epoch.
+Please note that to the output_dir, LoRA weights of each epoch will be saved, you can modify [train_utils.py](utils/train_utils.py) to change such setting, for instance to save only the last epoch.
 
 # Inference using fine-tuned Llama-2-70B (8-bit) on a single GPU
 
