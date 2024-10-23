@@ -31,7 +31,7 @@ from step1_annotate import preprocess_text, sentence_is_paradigm
 import torch
 import torch.distributed as dist
 import torch.optim as optim
-from peft import get_peft_model, prepare_model_for_int8_training, PeftModel
+from peft import get_peft_model, prepare_model_for_kbit_training, PeftModel
 from pkg_resources import packaging
 from torch.distributed.fsdp import (
     FullyShardedDataParallel as FSDP,
