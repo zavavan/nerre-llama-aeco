@@ -15,6 +15,7 @@ from ft_datasets import (
     get_genmat_dataset,
     get_AuNR_dataset,
     get_mof_dataset,
+    get_scierc_aeco_json_dataset
 )
 from typing import Optional
 
@@ -40,6 +41,7 @@ DATASET_PREPROC = {
     "moffold4_dataset":get_mof_dataset,
 
     "AuNR_dataset": get_AuNR_dataset,
+    "scierc_aeco_json_dataset" : get_scierc_aeco_json_dataset
 }
 
 

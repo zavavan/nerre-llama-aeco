@@ -11,3 +11,4 @@ from .custom_dataset import GenMatDataset as get_genmat_dataset
 from .custom_dataset import MOFDataset as get_mof_dataset
 
 from .custom_dataset import AuNRDataset as get_AuNR_dataset
+from .custom_dataset import scierc_aeco_DatasetJson as get_scierc_aeco_json_dataset
