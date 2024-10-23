@@ -135,5 +135,5 @@ class scierc_aeco_json_dataset:
     dataset: str = "scierc_aeco_json_dataset"
     train_split: str = "train"
     test_split: str = "val"
-    data_path: str = NERRErepo_dir+'scierc_aeco/data/'+"doping_data_forllama_json"
+    data_path: str = NERRErepo_dir+'scierc_aeco/data'
 

@@ -362,9 +362,9 @@ class scierc_aeco_DatasetJson(Dataset):
         #self.data = json.load(open(dataset_config.data_path))
 
         if split_name == "train":
-            self.data = json.load(open(dataset_config.data_path+"jsonscheme_train.json")) # self.data[0]["train"]  # Adjust this based on your dataset's structure
+            self.data = json.load(open(dataset_config.data_path+"train.json")) # self.data[0]["train"]  # Adjust this based on your dataset's structure
         else:
-            self.data = json.load(open(dataset_config.data_path+"jsonscheme_val.json"))# self.data[0]["validation"]  # Adjust this based on your dataset's structure
+            self.data = json.load(open(dataset_config.data_path+"val.json"))# self.data[0]["validation"]  # Adjust this based on your dataset's structure
 
         self.max_words = max_words
         self.tokenizer = tokenizer
