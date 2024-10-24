@@ -12,7 +12,7 @@ read=[]
 valsize=0
 
 # process doping data for llama-2 finetuning
-for mode in ['json','engextra','eng']:
+for mode in ['json']:
     with jsonlines.open(NERRErepo_dir+'scierc_aeco/data/'+f'training_{mode}.jsonl') as f:
         for line in f:#.iter():
             read.append(line)
