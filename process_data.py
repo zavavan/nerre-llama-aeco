@@ -28,7 +28,7 @@ for mode in ['json','engextra','eng']:
             data = val_dat[:]
         with open(NERRErepo_dir+'scierc_aeco/data/'+f"scierc_aeco_data_forllama_{mode}scheme_{ftmode}.json","w") as file1:
             json.dump(data,file1)
-
+'''
 # process general and MOF data for llama-2 finetuning
 for taskdir in ['experiments_general','experiments_mof_gpt3']:
     for i in range(5):
@@ -44,3 +44,4 @@ for taskdir in ['experiments_general','experiments_mof_gpt3']:
 
             with open(path+f"{mode}.json","w") as file1: #the processed file is .json file not .jsonl
                 json.dump(write,file1)
+'''
