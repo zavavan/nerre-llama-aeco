@@ -13,7 +13,7 @@ valsize=0
 
 # process doping data for llama-2 finetuning
 for mode in ['json','engextra','eng']:
-    with jsonlines.open(NERRErepo_dir+'doping/data/'+f'training_{mode}.jsonl') as f:
+    with jsonlines.open(NERRErepo_dir+'scierc_aeco/data/'+f'training_{mode}.jsonl') as f:
         for line in f:#.iter():
             read.append(line)
     write=[{'input':dat['prompt'],'output':dat['completion']} for dat in read]
@@ -26,7 +26,7 @@ for mode in ['json','engextra','eng']:
             data = train_dat[:]
         else:
             data = val_dat[:]
-        with open(NERRErepo_dir+'doping/data/'+f"doping_data_forllama_{mode}scheme_{ftmode}.json","w") as file1:
+        with open(NERRErepo_dir+'scierc_aeco/data/'+f"scierc_aeco_data_forllama_{mode}scheme_{ftmode}.json","w") as file1:
             json.dump(data,file1)
 
 # process general and MOF data for llama-2 finetuning
