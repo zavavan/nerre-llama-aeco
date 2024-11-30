@@ -9,7 +9,7 @@ if NERRErepo_dir.endswith('/'):
 else:
     NERRErepo_dir+='/'
 read=[]
-valsize=0
+valsize=70
 
 # process doping data for llama-2 finetuning
 for mode in ['json']:
