@@ -14,3 +14,4 @@ sentencepiece
 py7zr
 scipy
 optimum
+spacy
