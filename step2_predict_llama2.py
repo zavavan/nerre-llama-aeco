@@ -52,6 +52,7 @@ from transformers import (
     LlamaTokenizer,
     LlamaConfig,
     default_data_collator,
+    AutoTokenizer
 )
 
 
@@ -331,7 +332,7 @@ def preprocess_text(text):
         text = text.replace("  ", " ")
 
     doc = nlp(text)
-    sentences = [sent for sent in doc.sents]
+    sentences = [sent.text for sent in doc.sents]
 
     return sentences
 
@@ -463,6 +464,8 @@ def create_sentences_json_for_inference(entry):
         "doi": doi,
         "text": text,
         "sentences": [{"sentence_text": s} for i, s in enumerate(sentences)]
+        sentences = [{"sentence_text": sentence.text} for sentence in doc.sents]
+
     }
     return entry
 
