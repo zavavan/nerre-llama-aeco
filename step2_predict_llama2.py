@@ -24,9 +24,18 @@ from monty.serialization import loadfn, dumpfn
 import warnings
 import datetime
 
+
+import spacy
+# Load English tokenizer, tagger, parser and NER
+nlp = spacy.load("en_core_web_sm", disable=['tagger', 'parser', 'ner'])
+nlp.add_pipe('sentencizer')
+from spacy import displacy
+from spacy.tokens import Doc
+from spacy.tokens import Span
+
+
 from constants import DATADIR
 from util import dump_jsonl
-from step1_annotate import preprocess_text, sentence_is_paradigm
 
 import torch
 import torch.distributed as dist
@@ -140,11 +149,11 @@ def llm_completion_from_sentence_json(
     output = whitespace + output + stop_token
     return output
 
-
+'''
 def decode_entities_from_llm_completion(text, fmt="eng"):
     """
-    Obtain entities as a dictionary (to be converted to json) from a GPT-3 completion
-    string. Used for decoding LLM string replies to structured doping data.
+    Obtain entities as a dictionary (to be converted to json) from a llama completion
+    string. Used for decoding LLM string replies to structured aeco data.
 
     Args:
         text (str): The LLM completion string.
@@ -158,11 +167,11 @@ def decode_entities_from_llm_completion(text, fmt="eng"):
         raise ValueError(f"Value of fmt='{fmt}' not valid!")
 
     ents = {
-        "basemats": {},
-        "dopants": {},
-        "results": {},
-        "doping_modifiers": {},
-        "dopants2basemats": {},
+        "Tasks": {},
+        "Methods": {},
+        "Metrics": {},
+        "Methods_Used-for_Tasks": {},
+        "Metrics_Evaluates-for_Method":{}
     }
 
     if not text:
@@ -178,7 +187,7 @@ def decode_entities_from_llm_completion(text, fmt="eng"):
     # todo: implement doping modifiers and results
     text = text.strip()
 
-    if "There is no doping information" in text:
+    if "There is no information about 'Tasks', 'Methods' and 'Metrics'." in text:
         return ents
 
     lines = [l for l in text.split("\n") if l]
@@ -187,7 +196,7 @@ def decode_entities_from_llm_completion(text, fmt="eng"):
     basemat_counter = 0
 
     results = []
-    modifiers = []
+
 
     for l in lines:
         inverted_basemats = {v: k for k, v in ents["basemats"].items()}
@@ -295,13 +304,36 @@ def decode_entities_from_llm_completion(text, fmt="eng"):
 
         if result:
             results.append(result)
-        if modifier_list:
-            modifiers += modifier_list
 
     ents["doping_modifiers"] = {f"m{i}": m for i, m in enumerate(modifiers)}
     ents["results"] = {f"r{i}": r for i, r in enumerate(results)}
     # print(f"Text:\n{text}\n\nResulted in {pprint.pformat(ents)}\n")
     return ents
+'''
+
+
+def preprocess_text(text):
+    """
+    Preprocess a string to be presented to the user.
+
+    Args:
+        text (str): The text to preprocess.
+
+    Returns:
+        (str, list) The preprocessed text, and the list of chemical entities.
+    """
+    for tok in ("<inf>", "</inf>", "<sup>", "</sup>", "<hi>", "</hi>", "<sub>", "</sub", "$$", "\hbox", "\emph", "\\bf"):
+        text = text.replace(tok, "")
+
+    text = text.replace("\n", " ")
+
+    while "  " in text:
+        text = text.replace("  ", " ")
+
+    doc = nlp(text)
+    sentences = [sent for sent in doc.sents]
+
+    return sentences
 
 
 def llm_prompt_from_sentence_json(
@@ -327,15 +359,15 @@ def llm_prompt_from_sentence_json(
     relevant = sentence_json["relevant"]
 
     if relevant:
-        relevance_hint = "This text probably has information about doping."
+        relevance_hint = "This text probably has information about 'Tasks', 'Methods' and 'Metrics'."
     else:
-        relevance_hint = "This text probably does not have information about doping."
+        relevance_hint = "This text probably does not have information about 'Tasks', 'Methods' and 'Metrics'."
 
     if include_relevance_hint:
         text = f"{text}\n\n{relevance_hint}"
 
     if include_question:
-        text = f"{text}\n\nExtract doping information from this sentence."
+        text = f"{text}\n\nExtract 'Tasks', 'Methods' and 'Metrics' entities from this sentence and extract also 'Methods_Used-for_Tasks' relations between 'Methods' and 'Tasks', meaning that a Method is used or applied to perform a Task, and 'Metrics_Evaluates-for_Method' relations between 'Metrics' and 'Methods', meaning that an evaluation Metric is used to measure/evaluate the performance of a Method."
 
     return f"{text}\n{start_token}"
 
@@ -372,7 +404,7 @@ def create_jsonl(
     prompts = []
 
     for i, abstract_extracted in enumerate(abstracts_raw_data):
-        for s in abstract_extracted["doping_sentences"]:
+        for s in abstract_extracted["sentences"]:
 
             if not s["relevant"] and not include_irrelevant:
                 if dry_run:
@@ -425,89 +457,35 @@ def create_sentences_json_for_inference(entry):
     doi = entry["doi"]
     text = entry["text"]
     title_and_text = f"{title}. {text}" if title else text
-    sentences, cems_per_sentence = preprocess_text(title_and_text)
+    sentences = preprocess_text(title_and_text)
 
     entry = {
         "doi": doi,
         "title": title,
         "text": text,
-        "doping_sentences": [{"sentence_text": s, "sentence_cems": cems_per_sentence[i]} for i, s in enumerate(sentences)]
+        "sentences": [{"sentence_text": s} for i, s in enumerate(sentences)]
     }
     return entry
 
 
 # Major core functions
-def gpt3_finetune(
-        data_training,
-        training_filename,
-        fmt="eng",
-        write_extras=False,
-        n_epochs=7
-):
-    """
-    Fine tune a doping model using data from the annotation script.
-
-    MUST adhere to the annotation script formatting for the json.
-
-    Args:
-        data_training (list): The training data, in the annotation script heirarchical format.
-        training_filename (str): the name of the file you want to save
-            the jsonl training tuples to. E.g., "my_GPT3_training_file_version1.jsonl".
-        fmt (str): Either "json" or "eng". Note to use ExtraEng use "eng" with write_extras=True.
-        write_extras (bool): Whether to write extras' information (results, modifiers) to the
-            training file.
-        n_epochs (int): The number of epochs to use for training.
-
-    Returns:
-        data_training_dois ([str]): The list of dois included here for training.
-        training_filename (str): The name of the training file output as jsonl.
-    """
-    print("loading training set")
-    data_training_dois = [d["doi"] for d in data_training]
-    print("training set loaded.")
-
-    create_jsonl(
-        data_training,
-        output_filename=training_filename,
-        include_irrelevant=False,
-        dry_run=False,
-        prompt_kwargs=dict(
-            include_relevance_hint=False,
-            include_question=True
-        ),
-        completion_kwargs=dict(
-            write_links=True,
-            write_nonlinked_dopants=True,
-            write_nonlinked_basemats=True,
-            write_results=write_extras,
-            write_modifiers=write_extras
-        ),
-        fmt=fmt
-    )
-    print(f"JSONL written to {training_filename}.")
-
-    os.system(f"openai api fine_tunes.create -t '{training_filename}' -m 'davinci' --n_epochs={n_epochs}")
-
-    print(f"Model fine-tuning is in progress. Raw training JSONL data stored at {training_filename}.")
-    return data_training_dois, training_filename
-
 
 def llama2_infer(
         data_inference,
         lora_weights,
-        model_name='13b_8bit',
+        model_name,
         output_filename=None,
         save_every_n=100,
         halt_on_error=False,
         quantization=True
 ):
     """
-    Infer gpt3 entries from raw data (e.g., from a dump of a mongodb query).
+    Infer llama entries from raw data (e.g., from a dump of a mongodb query).
 
     Args:
         data_inference ([dict]): List of documents for inference. MUST have
             the following fields: "text", "title", "doi".
-        model (str): The OpenAI GPT3 model name to use.
+        model (str): The llama model name to use.
         output_filename (str): The filename to write the final outputs to. If not
             specified, will automatically name the file according to datetime.
         save_every_n (int): How often to write a backup file for the inferred data.
@@ -551,7 +529,7 @@ def llama2_infer(
         )
 
 
-    gpt3_predictions = []
+    llama_predictions = []
     jsonl_data = []
     for d in tqdm.tqdm(data_inference, desc="Texts processed"):
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -559,111 +537,95 @@ def llama2_infer(
         dois_skipped = []
         entry_json = create_sentences_json_for_inference(d)
 
-        sentences_json = entry_json["doping_sentences"]
+        sentences_json = entry_json["sentences"]
         for s_json in sentences_json:
             text = s_json["sentence_text"]
-            cems = s_json["sentence_cems"]
+            s_json["relevant"] = True
+            prompt = llm_prompt_from_sentence_json(s_json,include_relevance_hint=False,include_question=True)
 
-            if sentence_is_paradigm(text, cems):
-                s_json["relevant"] = True
-                prompt = llm_prompt_from_sentence_json(
-                    s_json,
-                    include_relevance_hint=False,
-                    include_question=True
-                )
+            has_response = False
+            while not has_response:
+                try:
+                    model_input = tokenizer(prompt,return_tensors='pt').to('cuda')
+                    model.eval()
+                    with torch.no_grad():
+                        response = tokenizer.decode(model.generate(**model_input,do_sample=False, max_new_tokens=512)[0], skip_special_tokens=True)
+                        response = response.replace(prompt,"")
+                        if response.endswith(STOP_TOKEN):
+                            response = response.replace(STOP_TOKEN,"")
+                    model.train()
 
-
-
-
-                has_response = False
-                while not has_response:
-                    try:
-                        model_input = tokenizer(prompt,return_tensors='pt').to('cuda')
-                        model.eval()
-                        with torch.no_grad():
-                            response = tokenizer.decode(model.generate(**model_input,do_sample=False, max_new_tokens=512)[0], skip_special_tokens=True)
-                            response = response.replace(prompt,"")		
-                            if response.endswith(STOP_TOKEN):
-                                response = response.replace(STOP_TOKEN,"")
-                        model.train()
-
-                        #response = openai.Completion.create(
-                        #    model=model,
-                        #    prompt=prompt,
-                        #    max_tokens=512,
-                        #    n=1,
-                        #    # top_p=1,
-                        #    temperature=0,
-                        #    stop=[STOP_TOKEN],
-                        #    logprobs=5
-                        #).choices[0]
-                        has_response = True
-                    except RateLimitError:
-                        warnings.warn("Ran into rate limit error, sleeping for 60 seconds and dumping midstream...")
-                        dumpfn(gpt3_predictions, os.path.join(DATADIR, f"midstream_ratelimit_{dt}.json"))
-                        time.sleep(60)
+                    #response = openai.Completion.create(
+                    #    model=model,
+                    #    prompt=prompt,
+                    #    max_tokens=512,
+                    #    n=1,
+                    #    # top_p=1,
+                    #    temperature=0,
+                    #    stop=[STOP_TOKEN],
+                    #    logprobs=5
+                    #).choices[0]
+                    has_response = True
+                except BaseException as BE:
+                    if halt_on_error:
+                        raise BE
+                    else:
+                        exc_type, exc_value, exc_traceback = sys.exc_info()
+                        warnings.warn(f"Ran into external error: {BE}")
+                        traceback.print_exception(exc_type, exc_value,
+                                                  exc_traceback,
+                                                  limit=2,
+                                                  file=sys.stdout)
                         print("Resuming...")
-                        continue
-                    except BaseException as BE:
-                        if halt_on_error:
-                            raise BE
-                        else:
-                            exc_type, exc_value, exc_traceback = sys.exc_info()
-                            warnings.warn(f"Ran into external error: {BE}")
-                            traceback.print_exception(exc_type, exc_value,
-                                                      exc_traceback,
-                                                      limit=2,
-                                                      file=sys.stdout)
-                            print("Resuming...")
-                            break
+                        break
 
-                # Record predictions, or put None if Error not halted on
-                s_json["gpt3_completion"] = response if has_response else None
-                s_json["gpt3_logprobs_numbers"] = 0 if has_response else None #response.logprobs.token_logprobs if has_response else None
-                s_json["gpt3_logprobs_tokens"] = 0 if has_response else None #response.logprobs.tokens if has_response else None
+            # Record predictions, or put None if Error not halted on
+            s_json["llama_completion"] = response if has_response else None
+            s_json["llama_logprobs_numbers"] = 0 if has_response else None #response.logprobs.token_logprobs if has_response else None
+            s_json["llama_logprobs_tokens"] = 0 if has_response else None #response.logprobs.tokens if has_response else None
 
-            else:
-                prompt = None
-                s_json["relevant"] = False
-                s_json["gpt3_completion"] = None
-                s_json["gpt3_logprobs_numbers"] = None
-                s_json["gpt3_logprobs_tokens"] = None
+        else:
+            prompt = None
+            s_json["relevant"] = False
+            s_json["llama_completion"] = None
+            s_json["llama_logprobs_numbers"] = None
+            s_json["llama_logprobs_tokens"] = None
 
-            if prompt:
-                jsonl_data.append({
-                    "prompt": prompt,
-                    "completion": s_json["gpt3_completion"],
-                })
+        if prompt:
+            jsonl_data.append({
+                "prompt": prompt,
+                "completion": s_json["llama_completion"],
+            })
 
-        gpt3_predictions.append(entry_json)
-        if len(gpt3_predictions) % save_every_n == 0:
-            print(f"Saving {len(gpt3_predictions)} docs midstream")
-            dumpfn(gpt3_predictions, os.path.join(DATADIR, f"midstream_{dt}.json"))
+    llama_predictions.append(entry_json)
+    if len(llama_predictions) % save_every_n == 0:
+        print(f"Saving {len(llama_predictions)} docs midstream")
+        dumpfn(llama_predictions, os.path.join(DATADIR, f"midstream_{dt}.json"))
 
-    dumpfn(gpt3_predictions, output_filename)
+    dumpfn(llama_predictions, output_filename)
     jsonl_filename = output_filename.replace(".json", ".jsonl")
     dump_jsonl(jsonl_data, jsonl_filename)
-    print(f"Dumped {len(gpt3_predictions)} total to {output_filename} (and raw jsonl to {jsonl_filename}).")
+    print(f"Dumped {len(llama_predictions)} total to {output_filename} (and raw jsonl to {jsonl_filename}).")
 
-
-def gpt3_decode(inferred_filename, output_filename, fmt="eng"):
+'''
+def llama_decode(inferred_filename, output_filename, fmt="eng"):
     """
-    Decode and coalesce GPT-3 completions to structured graphs.
+    Decode and coalesce llama completions to structured graphs.
 
     Simply adds an "entity_graph_raw" key to each sample using the
-    "doping_sentences" as input.
+    "sentences" as input.
 
     Args:
-        inferred_filename (str): The filename holding the GPT-3 inferences, generated
-            by gpt3_infer.
+        inferred_filename (str): The filename holding the llama inferences, generated
+            by llama_infer.
         output_filename (str): The filename to write structured graphs to.
         fmt (str): The format to use (eng or json).
     """
     inferred_samples = loadfn(inferred_filename)
 
     for abstract_json in tqdm.tqdm(inferred_samples):
-        for sentence_json in abstract_json["doping_sentences"]:
-            ents = decode_entities_from_llm_completion(sentence_json["gpt3_completion"], fmt=fmt)
+        for sentence_json in abstract_json["sentences"]:
+            ents = decode_entities_from_llm_completion(sentence_json["llama_completion"], fmt=fmt)
             sentence_json["entity_graph_raw"] = ents
 
     n_decoded = len(inferred_samples)
@@ -671,7 +633,7 @@ def gpt3_decode(inferred_filename, output_filename, fmt="eng"):
 
     print(f"Decoded {n_decoded} samples to file {output_filename}")
     return output_filename
-
+'''
 
 if __name__ == "__main__":
 
@@ -805,17 +767,7 @@ if __name__ == "__main__":
         raise ValueError(
             f"Unknown schema type: {st}. Choose from 'json', 'eng', or 'engextra'.")
 
-    if op_type == "train":
-        data_training = loadfn(training_json)
-        gpt3_finetune(
-            data_training=data_training,
-            training_filename=training_jsonl_output,
-            fmt=fmt,
-            write_extras=write_extras,
-            n_epochs=training_n_epochs
-
-        )
-    elif op_type == "predict":
+    if op_type == "predict":
         data_infer = loadfn(inference_json)
         data_infer = [{k: d[k] for k in ("title", "text", "doi")} for d in data_infer]
 
@@ -832,11 +784,7 @@ if __name__ == "__main__":
             quantization=quantization,
         )
 
-        gpt3_decode(
-            inferred_filename=inference_json_raw_output,
-            output_filename=inference_json_final_output,
-            fmt=fmt
-        )
+        #llama_decode(inferred_filename=inference_json_raw_output, output_filename=inference_json_final_output,fmt=fmt)
 
         endtime = datetime.datetime.strptime(str(datetime.datetime.now()),"%Y-%m-%d %H:%M:%S.%f")
         print("Time",endtime-starttime)
