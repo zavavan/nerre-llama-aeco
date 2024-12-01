@@ -453,15 +453,14 @@ def create_sentences_json_for_inference(entry):
     Returns:
         (dict): The updated, preprocessed entry.
     """
-    title = entry["title"]
     doi = entry["doi"]
+    title = ""
     text = entry["text"]
-    title_and_text = f"{title}. {text}" if title else text
+    title_and_text = f"{text}" if title else text
     sentences = preprocess_text(title_and_text)
 
     entry = {
         "doi": doi,
-        "title": title,
         "text": text,
         "sentences": [{"sentence_text": s} for i, s in enumerate(sentences)]
     }
@@ -769,7 +768,7 @@ if __name__ == "__main__":
 
     if op_type == "predict":
         data_infer = loadfn(inference_json)
-        data_infer = [{k: d[k] for k in ("title", "text", "doi")} for d in data_infer]
+        data_infer = [{k: d[k] for k in ("text", "doi")} for d in data_infer]
 
         if not inference_model_name:
             raise ValueError("No inference_model_name specified!")
