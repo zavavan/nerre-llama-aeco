@@ -464,11 +464,42 @@ def create_sentences_json_for_inference(entry):
         "doi": doi,
         "text": text,
         "sentences": [{"sentence_text": s} for i, s in enumerate(sentences)]
-        sentences = [{"sentence_text": sentence.text} for sentence in doc.sents]
 
     }
     return entry
 
+def read_sentences_json_for_inference(entry):
+    """
+    This method reads the sentence segmentation of the inference inpu file from the "sentences" field of the json file, instead of re-running a sentence-splitter.
+    This is to guarantee that one can enforce the compatibilty with the sentence segmentation from another triple extraction module, for example the dygiepp module and
+    allows integration of NERRE triples into a post-processing pipeline like SKG.
+
+    Prepare an entry for prediction with an LLM.
+    Entry must have abstract, doi, and optional title fields. The inpu file is expected to have a "sentences" field with string representation of sentences. The sentences are
+    expected to be the same as the one split in the Dygiepp module. Please use the utils.SentenceSplitAlignment to enforce the sentence splitting from another file containing the
+    same document (same ids).
+
+    Args:
+        entry (dict): The entry to prepare.
+
+    Returns:
+        (dict): The updated, preprocessed entry.
+    """
+    doi = entry["doi"]
+    title = ""
+    if entry["title"]:
+        title = entry["title"]
+    text = entry["text"]
+    #title_and_text = f"{text}. {title}" if title else text
+
+
+    entry = {
+        "doi": doi,
+        "text": text,
+        "sentences": [{"sentence_text": s} for i, s in enumerate(entry["sentences"])]
+
+    }
+    return entry
 
 # Major core functions
 
@@ -537,7 +568,9 @@ def llama2_infer(
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         dois_skipped = []
-        entry_json = create_sentences_json_for_inference(d)
+        #entry_json = create_sentences_json_for_inference(d)
+        entry_json = read_sentences_json_for_inference(d)
+
 
         sentences_json = entry_json["sentences"]
         for s_json in sentences_json:
@@ -555,7 +588,7 @@ def llama2_infer(
                         response = response.replace(prompt,"")
                         if response.endswith(STOP_TOKEN):
                             response = response.replace(STOP_TOKEN,"")
-                    model.train()
+                    #model.train()
 
                     #response = openai.Completion.create(
                     #    model=model,
@@ -585,13 +618,6 @@ def llama2_infer(
             s_json["llama_completion"] = response if has_response else None
             s_json["llama_logprobs_numbers"] = 0 if has_response else None #response.logprobs.token_logprobs if has_response else None
             s_json["llama_logprobs_tokens"] = 0 if has_response else None #response.logprobs.tokens if has_response else None
-
-        else:
-            prompt = None
-            s_json["relevant"] = False
-            s_json["llama_completion"] = None
-            s_json["llama_logprobs_numbers"] = None
-            s_json["llama_logprobs_tokens"] = None
 
         if prompt:
             jsonl_data.append({
