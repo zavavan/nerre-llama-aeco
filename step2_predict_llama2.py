@@ -36,7 +36,7 @@ from spacy.tokens import Span
 
 from constants import DATADIR
 from util import dump_jsonl
-
+print(DATADIR)
 import torch
 import torch.distributed as dist
 import torch.optim as optim
@@ -487,19 +487,21 @@ def read_sentences_json_for_inference(entry):
     """
     doi = entry["doi"]
     title = ""
-    if entry["title"]:
+    if "title" in entry.keys():
         title = entry["title"]
     text = entry["text"]
-    #title_and_text = f"{text}. {title}" if title else text
+    sentences = []
+    if "sentences" in entry.keys():
+        sentences = [{"sentence_text": s} for i, s in enumerate(entry["sentences"])]
+    #"sentences": [{"sentence_text": s} for i, s in enumerate(entry["sentences"])]
 
-
-    entry = {
+    new_entry = {
         "doi": doi,
+        "title" : title,
         "text": text,
-        "sentences": [{"sentence_text": s} for i, s in enumerate(entry["sentences"])]
-
+        "sentences": sentences
     }
-    return entry
+    return new_entry
 
 # Major core functions
 
