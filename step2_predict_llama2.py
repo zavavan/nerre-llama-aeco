@@ -628,7 +628,7 @@ def llama2_infer(
             })
 
     llama_predictions.append(entry_json)
-    if len(llama_predictions) % save_every_n == 0:
+    if len(llama_predictions) % int(save_every_n) == 0:
         print(f"Saving {len(llama_predictions)} docs midstream")
         dumpfn(llama_predictions, os.path.join(DATADIR, f"midstream_{dt}.json"))
 
