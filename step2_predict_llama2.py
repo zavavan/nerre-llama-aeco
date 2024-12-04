@@ -621,11 +621,11 @@ def llama2_infer(
             s_json["llama_logprobs_numbers"] = 0 if has_response else None #response.logprobs.token_logprobs if has_response else None
             s_json["llama_logprobs_tokens"] = 0 if has_response else None #response.logprobs.tokens if has_response else None
 
-        if prompt:
-            jsonl_data.append({
-                "prompt": prompt,
-                "completion": s_json["llama_completion"],
-            })
+            if prompt:
+                jsonl_data.append({
+                    "prompt": prompt,
+                    "completion": s_json["llama_completion"],
+                })
 
     llama_predictions.append(entry_json)
     if len(llama_predictions) % int(save_every_n) == 0:
@@ -799,7 +799,7 @@ if __name__ == "__main__":
 
     if op_type == "predict":
         data_infer = loadfn(inference_json)
-        data_infer = [{k: d[k] for k in ("text", "doi")} for d in data_infer]
+        data_infer = [{k: d[k] for k in ("text", "doi", "sentences")} for d in data_infer]
 
         if not inference_model_name:
             raise ValueError("No inference_model_name specified!")
