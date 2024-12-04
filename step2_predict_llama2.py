@@ -356,6 +356,10 @@ def llm_prompt_from_sentence_json(
     Returns:
         str: The prompt for the LLM.
     """
+
+    short_instruction = "From this sentence, extract 'Tasks', 'Methods' and 'Metrics' entities and extract 'Methods_Used-for_Tasks' relations between 'Methods' and 'Tasks' and 'Metrics_Evaluates-for_Method' relations between 'Metrics' and 'Methods'."
+    long_instruction = "Extract 'Tasks', 'Methods' and 'Metrics' entities from this sentence and extract also 'Methods_Used-for_Tasks' relations between 'Methods' and 'Tasks', meaning that a Method is used or applied to perform a Task, and 'Metrics_Evaluates-for_Method' relations between 'Metrics' and 'Methods', meaning that an evaluation Metric is used to measure/evaluate the performance of a Method."
+
     text = sentence_json["sentence_text"]
     relevant = sentence_json["relevant"]
 
@@ -368,7 +372,7 @@ def llm_prompt_from_sentence_json(
         text = f"{text}\n\n{relevance_hint}"
 
     if include_question:
-        text = f"{text}\n\nExtract 'Tasks', 'Methods' and 'Metrics' entities from this sentence and extract also 'Methods_Used-for_Tasks' relations between 'Methods' and 'Tasks', meaning that a Method is used or applied to perform a Task, and 'Metrics_Evaluates-for_Method' relations between 'Metrics' and 'Methods', meaning that an evaluation Metric is used to measure/evaluate the performance of a Method."
+        text = f"{text}\n\n{short_instruction}"
 
     return f"{text}\n{start_token}"
 
