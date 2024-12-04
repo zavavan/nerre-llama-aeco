@@ -356,7 +356,7 @@ def llm_prompt_from_sentence_json(
     Returns:
         str: The prompt for the LLM.
     """
-
+    sentence_json["relevant"] = True
     short_instruction = "From this sentence, extract 'Tasks', 'Methods' and 'Metrics' entities and extract 'Methods_Used-for_Tasks' relations between 'Methods' and 'Tasks' and 'Metrics_Evaluates-for_Method' relations between 'Metrics' and 'Methods'."
     long_instruction = "Extract 'Tasks', 'Methods' and 'Metrics' entities from this sentence and extract also 'Methods_Used-for_Tasks' relations between 'Methods' and 'Tasks', meaning that a Method is used or applied to perform a Task, and 'Metrics_Evaluates-for_Method' relations between 'Metrics' and 'Methods', meaning that an evaluation Metric is used to measure/evaluate the performance of a Method."
 
@@ -368,8 +368,8 @@ def llm_prompt_from_sentence_json(
     else:
         relevance_hint = "This text probably does not have information about 'Tasks', 'Methods' and 'Metrics'."
 
-    if include_relevance_hint:
-        text = f"{text}\n\n{relevance_hint}"
+    #if include_relevance_hint:
+    #    text = f"{text}\n\n{relevance_hint}"
 
     if include_question:
         text = f"{text}\n\n{short_instruction}"
@@ -698,6 +698,7 @@ def llama2_batch_infer(
     Returns:
         None
     """
+
     print(f"Loaded {len(data_inference)} samples for inference.")
     print("\n\n{}\n\n".format(model_name))
     #print(f"Using {model} for prediction")
@@ -715,6 +716,7 @@ def llama2_batch_infer(
         pass
 
     tokenizer = LlamaTokenizer.from_pretrained(base_model)
+    tokenizer.pad_token = tokenizer.eos_token
     model = LlamaForCausalLM.from_pretrained(
             base_model,
             load_in_8bit=quantization,
@@ -729,6 +731,7 @@ def llama2_batch_infer(
         )
 
 
+
     llama_predictions = []
     jsonl_data = []
     for d in tqdm.tqdm(data_inference, desc="Texts processed"):
@@ -740,49 +743,50 @@ def llama2_batch_infer(
 
 
         sentences_json = entry_json["sentences"]
-        for s_json in sentences_json:
-            text = s_json["sentence_text"]
-            s_json["relevant"] = True
-            prompt = llm_prompt_from_sentence_json(s_json,include_relevance_hint=False,include_question=True)
 
-            has_response = False
-            while not has_response:
-                try:
-                    model_input = tokenizer(prompt,return_tensors='pt').to('cuda')
-                    model.eval()
-                    with torch.no_grad():
-                        response = tokenizer.decode(model.generate(**model_input,do_sample=False, max_new_tokens=512)[0], skip_special_tokens=True)
-                        response = response.replace(prompt,"")
-                        if response.endswith(STOP_TOKEN):
-                            response = response.replace(STOP_TOKEN,"")
-                    #model.train()
+        # Format prompts for the batch of document sentences
+        prompts = [llm_prompt_from_sentence_json(s_json,include_relevance_hint=False,include_question=True) for s_json in sentences_json]
+        has_response = False
+        while not has_response:
+            try:
+                model_inputs = tokenizer(prompts,return_tensors='pt', padding=True, truncation=True).to('cuda')
 
-                    #response = openai.Completion.create(
-                    #    model=model,
-                    #    prompt=prompt,
-                    #    max_tokens=512,
-                    #    n=1,
-                    #    # top_p=1,
-                    #    temperature=0,
-                    #    stop=[STOP_TOKEN],
-                    #    logprobs=5
-                    #).choices[0]
-                    has_response = True
-                except BaseException as BE:
-                    if halt_on_error:
-                        raise BE
-                    else:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        warnings.warn(f"Ran into external error: {BE}")
-                        traceback.print_exception(exc_type, exc_value,
-                                                  exc_traceback,
-                                                  limit=2,
-                                                  file=sys.stdout)
-                        print("Resuming...")
-                        break
+                with torch.no_grad():
+                    outputs = model.generate(**model_inputs,do_sample=False, max_new_tokens=256)
 
-            # Record predictions, or put None if Error not halted on
-            s_json["llama_completion"] = response if has_response else None
+                responses = [tokenizer.decode(output, skip_special_tokens=True)[0] for output in outputs]
+                for i,response in enumerate(responses):
+                    response = response.replace(prompts[i], "")
+                    if response.endswith(STOP_TOKEN):
+                        response = response.replace(STOP_TOKEN, "")
+
+                #response = openai.Completion.create(
+                #    model=model,
+                #    prompt=prompt,
+                #    max_tokens=512,
+                #    n=1,
+                #    # top_p=1,
+                #    temperature=0,
+                #    stop=[STOP_TOKEN],
+                #    logprobs=5
+                #).choices[0]
+                has_response = True
+            except BaseException as BE:
+                if halt_on_error:
+                    raise BE
+                else:
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    warnings.warn(f"Ran into external error: {BE}")
+                    traceback.print_exception(exc_type, exc_value,
+                                              exc_traceback,
+                                              limit=2,
+                                              file=sys.stdout)
+                    print("Resuming...")
+                    break
+
+        # Record predictions, or put None if Error not halted on
+        for i,s_json in enumerate(sentences_json):
+            s_json["llama_completion"] = responses[i] if has_response else None
             #s_json["llama_logprobs_numbers"] = 0 if has_response else None #response.logprobs.token_logprobs if has_response else None
             #s_json["llama_logprobs_tokens"] = 0 if has_response else None #response.logprobs.tokens if has_response else None
 
@@ -943,7 +947,7 @@ if __name__ == "__main__":
         if not inference_model_name:
             raise ValueError("No inference_model_name specified!")
 
-        llama2_infer(
+        llama2_batch_infer(
             data_inference=data_infer,
             lora_weights=lora_weights,
             output_filename=inference_json_raw_output,
