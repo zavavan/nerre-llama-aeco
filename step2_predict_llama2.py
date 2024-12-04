@@ -618,8 +618,8 @@ def llama2_infer(
 
             # Record predictions, or put None if Error not halted on
             s_json["llama_completion"] = response if has_response else None
-            s_json["llama_logprobs_numbers"] = 0 if has_response else None #response.logprobs.token_logprobs if has_response else None
-            s_json["llama_logprobs_tokens"] = 0 if has_response else None #response.logprobs.tokens if has_response else None
+            #s_json["llama_logprobs_numbers"] = 0 if has_response else None #response.logprobs.token_logprobs if has_response else None
+            #s_json["llama_logprobs_tokens"] = 0 if has_response else None #response.logprobs.tokens if has_response else None
 
             if prompt:
                 jsonl_data.append({
@@ -664,6 +664,141 @@ def llama_decode(inferred_filename, output_filename, fmt="eng"):
     print(f"Decoded {n_decoded} samples to file {output_filename}")
     return output_filename
 '''
+
+## Perform llama2 inference with batches of size 4
+def llama2_batch_infer(
+        data_inference,
+        lora_weights,
+        model_name,
+        output_filename=None,
+        save_every_n=100,
+        halt_on_error=False,
+        quantization=True
+):
+    """
+    Infer llama entries from raw data (e.g., from a dump of a mongodb query).
+
+    Args:
+        data_inference ([dict]): List of documents for inference. MUST have
+            the following fields: "text", "title", "doi".
+        model (str): The llama model name to use.
+        output_filename (str): The filename to write the final outputs to. If not
+            specified, will automatically name the file according to datetime.
+        save_every_n (int): How often to write a backup file for the inferred data.
+            Data will automatically be saved every time a rate limit error
+            occurs.
+        halt_on_error (bool): Whether to halt the inference on an exception
+            which is NOT a RateLimitError. If False, will not halt; if true,
+            will halt.
+
+    Returns:
+        None
+    """
+    print(f"Loaded {len(data_inference)} samples for inference.")
+    print("\n\n{}\n\n".format(model_name))
+    #print(f"Using {model} for prediction")
+
+    if model_name=='13b_8bit':
+        base_model=os.environ['LLAMA2_13B_8bit']
+        #lora_weights=os.environ['DOPING_13B_8bit']
+    elif model_name=='7b_8bit':
+        base_model=os.environ['LLAMA2_7B_8bit']
+        #lora_weights=os.environ['DOPING_7B_8bit']
+    elif model_name=='70b_8bit':
+        base_model=os.environ['LLAMA2_70B_8bit']
+        #lora_weights=os.environ['DOPING_70B_8bit']
+    else:
+        pass
+
+    tokenizer = LlamaTokenizer.from_pretrained(base_model)
+    model = LlamaForCausalLM.from_pretrained(
+            base_model,
+            load_in_8bit=quantization,
+            torch_dtype=torch.float16,
+            device_map="auto",
+        )
+    model = PeftModel.from_pretrained(
+            model,
+            lora_weights,
+            torch_dtype=torch.float16,
+            device_map="auto",
+        )
+
+
+    llama_predictions = []
+    jsonl_data = []
+    for d in tqdm.tqdm(data_inference, desc="Texts processed"):
+        dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        dois_skipped = []
+        #entry_json = create_sentences_json_for_inference(d)
+        entry_json = read_sentences_json_for_inference(d)
+
+
+        sentences_json = entry_json["sentences"]
+        for s_json in sentences_json:
+            text = s_json["sentence_text"]
+            s_json["relevant"] = True
+            prompt = llm_prompt_from_sentence_json(s_json,include_relevance_hint=False,include_question=True)
+
+            has_response = False
+            while not has_response:
+                try:
+                    model_input = tokenizer(prompt,return_tensors='pt').to('cuda')
+                    model.eval()
+                    with torch.no_grad():
+                        response = tokenizer.decode(model.generate(**model_input,do_sample=False, max_new_tokens=512)[0], skip_special_tokens=True)
+                        response = response.replace(prompt,"")
+                        if response.endswith(STOP_TOKEN):
+                            response = response.replace(STOP_TOKEN,"")
+                    #model.train()
+
+                    #response = openai.Completion.create(
+                    #    model=model,
+                    #    prompt=prompt,
+                    #    max_tokens=512,
+                    #    n=1,
+                    #    # top_p=1,
+                    #    temperature=0,
+                    #    stop=[STOP_TOKEN],
+                    #    logprobs=5
+                    #).choices[0]
+                    has_response = True
+                except BaseException as BE:
+                    if halt_on_error:
+                        raise BE
+                    else:
+                        exc_type, exc_value, exc_traceback = sys.exc_info()
+                        warnings.warn(f"Ran into external error: {BE}")
+                        traceback.print_exception(exc_type, exc_value,
+                                                  exc_traceback,
+                                                  limit=2,
+                                                  file=sys.stdout)
+                        print("Resuming...")
+                        break
+
+            # Record predictions, or put None if Error not halted on
+            s_json["llama_completion"] = response if has_response else None
+            #s_json["llama_logprobs_numbers"] = 0 if has_response else None #response.logprobs.token_logprobs if has_response else None
+            #s_json["llama_logprobs_tokens"] = 0 if has_response else None #response.logprobs.tokens if has_response else None
+
+            #if prompt:
+            #    jsonl_data.append({
+            #        "prompt": prompt,
+            #        "completion": s_json["llama_completion"],
+            #    })
+
+    llama_predictions.append(entry_json)
+    if len(llama_predictions) % int(save_every_n) == 0:
+        print(f"Saving {len(llama_predictions)} docs midstream")
+        dumpfn(llama_predictions, os.path.join(DATADIR, f"midstream_{dt}.json"))
+
+    dumpfn(llama_predictions, output_filename)
+    jsonl_filename = output_filename.replace(".json", ".jsonl")
+    dump_jsonl(jsonl_data, jsonl_filename)
+    print(f"Dumped {len(llama_predictions)} total to {output_filename} (and raw jsonl to {jsonl_filename}).")
+
+
 
 if __name__ == "__main__":
 
