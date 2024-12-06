@@ -703,7 +703,7 @@ def llama2_batch_infer(
         None
     """
 
-    print(f"Loaded {len(data_inference)} samples for inference.")
+    #print(f"Loaded {len(data_inference)} samples for inference.")
     print("\n\n{}\n\n".format(model_name))
     #print(f"Using {model} for prediction")
 
@@ -733,33 +733,38 @@ def llama2_batch_infer(
             torch_dtype=torch.float16,
             device_map="auto",
         )
+    model.eval()
 
+    global_sentences = [{"doi": doc["doi"], "sent_num": i, **sentence} for doc in data_inference for i,sentence in enumerate(doc["sentences"])]
+    print(f"Loaded {len(global_sentences)} sentences for inference.")
 
+    mapping_doi_doc = {doc['doi'] : doc for doc in data_inference }
 
     llama_predictions = []
     jsonl_data = []
-    for d in tqdm.tqdm(data_inference, desc="Texts processed"):
+
+
+    batch_size = 20
+    counter = 0
+    for i in tqdm.tqdm(range(0, len(global_sentences), batch_size), desc="Processing batches"):
+
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-        dois_skipped = []
-        #entry_json = create_sentences_json_for_inference(d)
-        entry_json = read_sentences_json_for_inference(d)
-
-
-        sentences_json = entry_json["sentences"]
+        batch = global_sentences[i:i + batch_size]
 
         # Format prompts for the batch of document sentences
-        prompts = [llm_prompt_from_sentence_json(s_json,include_relevance_hint=False,include_question=True) for s_json in sentences_json]
+        prompts = [llm_prompt_from_sentence_json(s_json, include_relevance_hint=False, include_question=True) for s_json in batch]
+        print(prompts)
         has_response = False
         while not has_response:
             try:
-                model_inputs = tokenizer(prompts,return_tensors='pt', padding=True, truncation=True).to('cuda')
-
+                # Tokenize the batch
+                model_inputs = tokenizer(prompts, return_tensors="pt", padding=True).to("cuda")
                 with torch.no_grad():
                     outputs = model.generate(**model_inputs,do_sample=False, max_new_tokens=256)
 
-                responses = [tokenizer.decode(output, skip_special_tokens=True)[0] for output in outputs]
+                responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                 for i,response in enumerate(responses):
+                    print(response)
                     response = response.replace(prompts[i], "")
                     if response.endswith(STOP_TOKEN):
                         response = response.replace(STOP_TOKEN, "")
@@ -789,21 +794,23 @@ def llama2_batch_infer(
                     break
 
         # Record predictions, or put None if Error not halted on
-        for i,s_json in enumerate(sentences_json):
+
+        for i,s_json in enumerate(batch):
             s_json["llama_completion"] = responses[i] if has_response else None
-            #s_json["llama_logprobs_numbers"] = 0 if has_response else None #response.logprobs.token_logprobs if has_response else None
-            #s_json["llama_logprobs_tokens"] = 0 if has_response else None #response.logprobs.tokens if has_response else None
+            sent_doc = s_json["doi"]
+            sent_num = s_json["sent_num"]
+            del s_json["doi"]
+            del s_json["sent_num"]
+            mapping_doi_doc[sent_doc]['sentences'][sent_num]=s_json
 
-            #if prompt:
-            #    jsonl_data.append({
-            #        "prompt": prompt,
-            #        "completion": s_json["llama_completion"],
-            #    })
+        llama_predictions.addAll(mapping_doi_doc.values())
+        counter += 1
+        if counter > 2:
+            break
 
-    llama_predictions.append(entry_json)
-    if len(llama_predictions) % int(save_every_n) == 0:
-        print(f"Saving {len(llama_predictions)} docs midstream")
-        dumpfn(llama_predictions, os.path.join(DATADIR, f"midstream_{dt}.json"))
+        if (batch_size * i) % int(save_every_n) == 0:
+            print(f"Saving {len(llama_predictions)} docs midstream")
+            dumpfn(llama_predictions, os.path.join(DATADIR, f"midstream_{dt}.json"))
 
     dumpfn(llama_predictions, output_filename)
     jsonl_filename = output_filename.replace(".json", ".jsonl")
@@ -951,7 +958,7 @@ if __name__ == "__main__":
         if not inference_model_name:
             raise ValueError("No inference_model_name specified!")
 
-        llama2_infer(
+        llama2_batch_infer(
             data_inference=data_infer,
             lora_weights=lora_weights,
             output_filename=inference_json_raw_output,
