@@ -356,10 +356,8 @@ def llm_prompt_from_sentence_json(
     Returns:
         str: The prompt for the LLM.
     """
-    sentence_json["relevant"] = True
-    short_instruction = "From this sentence, extract 'Tasks', 'Methods' and 'Metrics' entities and extract 'Methods_Used-for_Tasks' relations between 'Methods' and 'Tasks' and 'Metrics_Evaluates-for_Method' relations between 'Metrics' and 'Methods'."
-    long_instruction = "Extract 'Tasks', 'Methods' and 'Metrics' entities from this sentence and extract also 'Methods_Used-for_Tasks' relations between 'Methods' and 'Tasks', meaning that a Method is used or applied to perform a Task, and 'Metrics_Evaluates-for_Method' relations between 'Metrics' and 'Methods', meaning that an evaluation Metric is used to measure/evaluate the performance of a Method."
-
+    short_prompt = "From this sentence, extract non-overlapping entities of type 'Tasks', 'Methods' and 'Metrics' entities and extract 'Methods_Used-for_Tasks' relations between 'Methods' and 'Tasks' and 'Metrics_Evaluates-for_Method' relations between 'Metrics' and 'Methods'."
+    long_prompt = "From this sentence, extract non-overlapping entities of type 'Tasks', 'Methods' and 'Metrics' and extract also 'Methods_Used-for_Tasks' relations between 'Methods' and 'Tasks', meaning that a Method is used or applied to perform a Task, and 'Metrics_Evaluates-for_Method' relations between 'Metrics' and 'Methods', meaning that an evaluation Metric is used to measure or evaluate the performance of a Method."
     text = sentence_json["sentence_text"]
     relevant = sentence_json["relevant"]
 
@@ -372,9 +370,9 @@ def llm_prompt_from_sentence_json(
     #    text = f"{text}\n\n{relevance_hint}"
 
     if include_question:
-        text = f"{text}\n\n{short_instruction}"
+        result = f"{text}\n\n{short_prompt}"
 
-    return f"{text}\n{start_token}"
+    return f"{result}\n{start_token}"
 
 
 def create_jsonl(
@@ -570,19 +568,20 @@ def llama2_infer(
 
     llama_predictions = []
     jsonl_data = []
+    counter=0
     for d in tqdm.tqdm(data_inference, desc="Texts processed"):
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         dois_skipped = []
         #entry_json = create_sentences_json_for_inference(d)
-        entry_json = read_sentences_json_for_inference(d)
-
-
-        sentences_json = entry_json["sentences"]
+        #entry_json = read_sentences_json_for_inference(d)
+        print(d)
+        sentences_json = d["sentences"]
         for s_json in sentences_json:
-            text = s_json["sentence_text"]
+            #text = s_json["sentence_text"]
             s_json["relevant"] = True
             prompt = llm_prompt_from_sentence_json(s_json,include_relevance_hint=False,include_question=True)
+            #print(prompt)
 
             has_response = False
             while not has_response:
@@ -630,11 +629,16 @@ def llama2_infer(
                     "prompt": prompt,
                     "completion": s_json["llama_completion"],
                 })
+        counter+=1
+        print('documents processed: ' + str(counter))
+        llama_predictions.append(d)
+        if counter > 2:
+            break
 
-    llama_predictions.append(entry_json)
-    if len(llama_predictions) % int(save_every_n) == 0:
-        print(f"Saving {len(llama_predictions)} docs midstream")
-        dumpfn(llama_predictions, os.path.join(DATADIR, f"midstream_{dt}.json"))
+        if len(llama_predictions) % int(save_every_n) == 0:
+            print(f"Saving {len(llama_predictions)} docs midstream")
+            dumpfn(llama_predictions, os.path.join(DATADIR, f"midstream_{dt}.json"))
+
 
     dumpfn(llama_predictions, output_filename)
     jsonl_filename = output_filename.replace(".json", ".jsonl")
@@ -947,7 +951,7 @@ if __name__ == "__main__":
         if not inference_model_name:
             raise ValueError("No inference_model_name specified!")
 
-        llama2_batch_infer(
+        llama2_infer(
             data_inference=data_infer,
             lora_weights=lora_weights,
             output_filename=inference_json_raw_output,
