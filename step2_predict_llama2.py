@@ -719,7 +719,7 @@ def llama2_batch_infer(
     else:
         pass
 
-    tokenizer = LlamaTokenizer.from_pretrained(base_model)
+    tokenizer = LlamaTokenizer.from_pretrained(base_model, padding_side="left")
     tokenizer.pad_token = tokenizer.eos_token
     model = LlamaForCausalLM.from_pretrained(
             base_model,
@@ -744,7 +744,7 @@ def llama2_batch_infer(
     jsonl_data = []
 
 
-    batch_size = 20
+    batch_size = 30
     counter = 0
     for i in tqdm.tqdm(range(0, len(global_sentences), batch_size), desc="Processing batches"):
 
@@ -753,7 +753,7 @@ def llama2_batch_infer(
 
         # Format prompts for the batch of document sentences
         prompts = [llm_prompt_from_sentence_json(s_json, include_relevance_hint=False, include_question=True) for s_json in batch]
-        print(prompts)
+        #print(prompts)
         has_response = False
         while not has_response:
             try:
@@ -764,11 +764,11 @@ def llama2_batch_infer(
 
                 responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
                 for i,response in enumerate(responses):
-                    print(response)
-                    response = response.replace(prompts[i], "")
-                    if response.endswith(STOP_TOKEN):
-                        response = response.replace(STOP_TOKEN, "")
-
+                    #print(response)
+                    parsed_response = response.replace(prompts[i], "")
+                    if parsed_response.endswith(STOP_TOKEN):
+                        parsed_response = parsed_response.replace(STOP_TOKEN, "")
+                    responses[i]=parsed_response
                 #response = openai.Completion.create(
                 #    model=model,
                 #    prompt=prompt,
@@ -803,9 +803,9 @@ def llama2_batch_infer(
             del s_json["sent_num"]
             mapping_doi_doc[sent_doc]['sentences'][sent_num]=s_json
 
-        llama_predictions.addAll(mapping_doi_doc.values())
+        llama_predictions.extend(mapping_doi_doc.values())
         counter += 1
-        if counter > 2:
+        if counter > 1000:
             break
 
         if (batch_size * i) % int(save_every_n) == 0:
