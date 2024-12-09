@@ -679,7 +679,7 @@ def llama2_batch_infer(
         lora_weights,
         model_name,
         output_filename=None,
-        save_every_n=100,
+        save_every_n=3000,
         halt_on_error=False,
         quantization=True
 ):
@@ -750,6 +750,8 @@ def llama2_batch_infer(
 
         dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         batch = global_sentences[i:i + batch_size]
+        #print('Batch of sentences to be processed: \n')
+        #print(batch)
 
         # Format prompts for the batch of document sentences
         prompts = [llm_prompt_from_sentence_json(s_json, include_relevance_hint=False, include_question=True) for s_json in batch]
@@ -803,19 +805,21 @@ def llama2_batch_infer(
             del s_json["sent_num"]
             mapping_doi_doc[sent_doc]['sentences'][sent_num]=s_json
 
-        llama_predictions.extend(mapping_doi_doc.values())
+        #llama_predictions.extend(mapping_doi_doc.values())
         counter += 1
         if counter > 1000:
             break
 
         if (batch_size * i) % int(save_every_n) == 0:
-            print(f"Saving {len(llama_predictions)} docs midstream")
-            dumpfn(llama_predictions, os.path.join(DATADIR, f"midstream_{dt}.json"))
+            print(f"Saving {len(mapping_doi_doc.values())} docs midstream")
+            dumpfn(list(mapping_doi_doc.values()), os.path.join(DATADIR, f"midstream_{dt}.json"))
 
-    dumpfn(llama_predictions, output_filename)
+    #print('Printing mapping_doi_doc at the end of the processing:')
+    #print(mapping_doi_doc)
+    dumpfn(list(mapping_doi_doc.values()), output_filename)
     jsonl_filename = output_filename.replace(".json", ".jsonl")
-    dump_jsonl(jsonl_data, jsonl_filename)
-    print(f"Dumped {len(llama_predictions)} total to {output_filename} (and raw jsonl to {jsonl_filename}).")
+    #dump_jsonl(jsonl_data, jsonl_filename)
+    print(f"Dumped {len(list(mapping_doi_doc.values()))} total to {output_filename} (and raw jsonl to {jsonl_filename}).")
 
 
 
