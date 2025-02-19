@@ -958,7 +958,7 @@ if __name__ == "__main__":
     if op_type == "predict":
         data_infer = loadfn(inference_json)
         data_infer = [{k: d[k] for k in ("text", "doi", "sentences")} for d in data_infer]
-        print("Number of documents to be processed: " + len(data_infer))
+        print("Number of documents to be processed: " + str(len(data_infer)))
         if not inference_model_name:
             raise ValueError("No inference_model_name specified!")
 
