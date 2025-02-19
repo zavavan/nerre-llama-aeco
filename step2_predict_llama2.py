@@ -679,7 +679,7 @@ def llama2_batch_infer(
         lora_weights,
         model_name,
         output_filename=None,
-        save_every_n=3000,
+        save_every_n=100,
         halt_on_error=False,
         quantization=True
 ):
@@ -893,7 +893,7 @@ if __name__ == "__main__":
 
     p.add_argument(
         '--inference_save_every_n',
-        default=100,
+        default=1000,
         help="If predicting, specify how often to save the raw predictions to the JSONL file in case of a midstream interruption. Default is 100.",
     )
     p.add_argument(
@@ -958,7 +958,7 @@ if __name__ == "__main__":
     if op_type == "predict":
         data_infer = loadfn(inference_json)
         data_infer = [{k: d[k] for k in ("text", "doi", "sentences")} for d in data_infer]
-
+        print("Number of documents to be processed: " + len(data_infer))
         if not inference_model_name:
             raise ValueError("No inference_model_name specified!")
 
