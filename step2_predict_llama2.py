@@ -15,7 +15,7 @@ import sys
 import traceback
 import pprint
 import json
-
+import math
 import argparse
 #import openai
 #from openai.error import RateLimitError
@@ -746,9 +746,10 @@ def llama2_batch_infer(
 
     batch_size = 30
     counter = 0
-    for i in tqdm.tqdm(range(0, len(global_sentences), batch_size), desc="Processing batches"):
+    total_batches = math.ceil(len(global_sentences) / batch_size)
+    for i in tqdm.tqdm(range(0, len(global_sentences), batch_size), total=total_batches, desc="Processing batches"):
 
-        dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         batch = global_sentences[i:i + batch_size]
         #print('Batch of sentences to be processed: \n')
         #print(batch)
@@ -807,7 +808,7 @@ def llama2_batch_infer(
 
         #llama_predictions.extend(mapping_doi_doc.values())
         counter += 1
-        if counter > 1000:
+        if counter > 10000:
             break
 
         if (batch_size * i) % int(save_every_n) == 0:
