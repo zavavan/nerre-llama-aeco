@@ -747,10 +747,9 @@ def llama2_batch_infer(
     batch_size = 30
     counter = 0
     total_batches = math.ceil(len(global_sentences) / batch_size)
-    for i in tqdm.tqdm(range(0, len(global_sentences), batch_size), total=total_batches, desc="Processing batches"):
-
-    dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        batch = global_sentences[i:i + batch_size]
+    for k in tqdm.tqdm(range(0, len(global_sentences), batch_size), total=total_batches, desc="Processing batches"):
+        dt = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        batch = global_sentences[k:k + batch_size]
         #print('Batch of sentences to be processed: \n')
         #print(batch)
 
@@ -811,7 +810,7 @@ def llama2_batch_infer(
         if counter > 10000:
             break
 
-        if (batch_size * i) % int(save_every_n) == 0:
+        if counter % int(save_every_n) == 0:
             print(f"Saving {len(mapping_doi_doc.values())} docs midstream")
             dumpfn(list(mapping_doi_doc.values()), os.path.join(DATADIR, f"midstream_{dt}.json"))
 
