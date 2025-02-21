@@ -706,7 +706,7 @@ def llama2_batch_infer(
     #print(f"Loaded {len(data_inference)} samples for inference.")
     print("\n\n{}\n\n".format(model_name))
     #print(f"Using {model} for prediction")
-
+    print('save_every_n' + str(save_every_n))
     if model_name=='13b_8bit':
         base_model=os.environ['LLAMA2_13B_8bit']
         #lora_weights=os.environ['DOPING_13B_8bit']
